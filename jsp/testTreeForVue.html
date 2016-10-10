@@ -8,12 +8,58 @@
 		<script type="text/javascript" src="../js/publicJS/vue.js" ></script>
 		<script type="text/javascript" src="../js/publicJS/vue-router.min.js" ></script>
 		<link rel="stylesheet" href="../css/publicCSS/bootstrap.min.css" />
+		<style type="text/css">
+			div [onclick]{
+				background: red;
+				color: blue;
+			}
+		</style>
 	</head>
 	<body>
-		<div id="test"></div>
+		<div id="tree"></div>
+		<div  onclick="javascript:testOnclick('dsd');">sss</div>
 		<script type="text/javascript">
+			function testOnclick(id){
+				alert(id);
+			}
+			/**
+			 * 功能：创建一级节点
+			 * 约定 child为子节点且为数组即一个节点为｛id:"id",icon:"../test.jpg",url:"../test.do",isLeaf:true,....,child:[....]}
+			 * 		公共字段为固定的如：isLeaf 为叶节点当isLeaf是true时为叶节点此时Url属性可用即点击事件不再去加载节点而去做跳转
+			 * 					   id,icon为其图标child为其子节点，text为其节点文本,level为层级
+			 * 		
+			 * @param String id
+			 * @param {Array} data
+			 * 未完功能expand为true时要展开其节点
+			 */
+			function createTree(id,data){
+				var tree = getTreeCell(data);
+				$('#'+id).append(tree);
+			}
 			
+			function treeNodeClick(id){
+				var data = ajaxData;
+				if(data.hasOwnProperty("isLeaf")&&data.isLeaf){//当是叶节点时再执行点击事件为跳转URL
+					
+				}else{
+					var node = getTreeCell(data);
+					$('#'+id).after(node);
+				}
+				
+			}
 			
+			function getTreeCell(data){
+				var cell = '<div ';
+				for (var i = 0;i < data.length;i++) {
+					var obj = data[i];
+					for(a in obj){
+						//if(!a.hasOwnProperty(obj)||typeof ( obj [a]) == " function " )continue;//是继承属性和Function跳过
+						tree += ''+a+'="'+obj[a]+'" ';
+					}
+					tree += 'onclick:"javascript:treeNodeClick('+"'"+obj["id"]+"'"+');"'+'><img src="'+obj["icon"]+'"><div>'+obj['text']+'</div></div>';
+				}
+				return cell;
+			}
 		</script>
 	</body>
 </html>
