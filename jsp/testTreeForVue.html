@@ -19,6 +19,41 @@
 		<div id="tree"></div>
 		<div  onclick="javascript:testOnclick('dsd');">sss</div>
 		<script type="text/javascript">
+		/**以下是树的公共属性，可换名称只需传入的数据与其相对应即可*/
+		/**节点的唯一辨识*/
+		var STRIGN_ID = 'id';
+		/**展开属性 true为展开false为合*/
+		var STRING_EXPAND = "expand";
+		/**是否为叶节点*/
+		var STRING_ISLEAF = "isLeaf";
+		/**节点的名称，是要显示的文本信息*/
+		var STRING_TEXT = "text";
+		/**节点的图标的地址，目前是完整地址，暂未直接图标名称*/
+		var STRING_ICON = "icon";
+		/**节点的级别,数字从0开始如：0或‘0’，决定树的样式等等，比较重要*/
+		var STRING_LEVEL = 'level';
+		/**节点的父节点，根节点的父节点为root**/
+		var STRING_PARENTID = "parentId";
+		/**根节点的字面量*/
+		var STRING_ROOT = 'root';
+		var STRING_FLUSH = FLUSH;
+		
+		
+		
+		/**公共字段*/
+		var STRING_TRUE = "true";
+		var STRING_FALSE = "false";
+		/**合的速度*/
+		var INT_HIDEORSHOWTIME = 1000;
+		/**树的节点数据加载url，直接在创建树之前赋值*/
+		var TREE_NODE_URL = null;
+		$(function(){
+			TREE_NODE_URL = 'test.do';
+			var data = getNodeDataById(STRING_ROOT);
+			data = [{"id":1,"icon":"","text":"node1","level":0,"expand":false},
+						{"id":2,"icon":"","text":"node2","level":0,"expand":false}]
+			createTree("tree",data);
+		})
 			function testOnclick(id){
 				alert(id);
 			}
@@ -28,37 +63,109 @@
 			 * 		公共字段为固定的如：isLeaf 为叶节点当isLeaf是true时为叶节点此时Url属性可用即点击事件不再去加载节点而去做跳转
 			 * 					   id,icon为其图标child为其子节点，text为其节点文本,level为层级
 			 * 		
-			 * @param String id
+			 * @param {String} id
 			 * @param {Array} data
-			 * 未完功能expand为true时要展开其节点
+			 * 未完功能expand为true时要展开其节点，完成一半，下次继续
 			 */
 			function createTree(id,data){
 				var tree = getTreeCell(data);
 				$('#'+id).append(tree);
 			}
 			
+			/**
+			 * 1.根据{id}节点的展开属性去展开或合***********3未完只能展开不能合
+			 * 2.根据{id}节点的isLeaf去加载节点还是打开URL
+			 * 3.正在做的功能查找{id}节点的了节点是否加载过了，如果加载过了直接SHOW，减少AJXA请求，
+		 	 * 	同时需要加入刷新功能。刷新功能：直接在树的父元素中加入一个刷新按钮为最理想
+			 * @param {String} id
+			 */
 			function treeNodeClick(id){
-				var data = ajaxData;
-				if(data.hasOwnProperty("isLeaf")&&data.isLeaf){//当是叶节点时再执行点击事件为跳转URL
-					
+				if(data.hasOwnProperty(STRING_ISLEAF)&&data.isLeaf){//当是叶节点时再执行点击事件为跳转URL
+					//跳转
+					return;
+				}
+				var data = [{"id":11,"icon":"","text":"node11","level":1},//测试数据
+						{"id":21,"icon":"","text":"node21","level":1}];
+				var expandFlag = $('#'+id).attr(STRING_EXPAND);
+				if(expandFlag == true || expandFlag == STRING_TRUE){//点击展开再点合起来
+					expandFlag = false;
+					$('#'+id).next('div').length != 1?alert(id+"节点的兄弟节点出了错误！")return:
+						$('#'+id).next('div').hide(INT_HIDEORSHOWTIME);
 				}else{
+					if($($('#'+id).next('div'))).attr(STRING_LEVEL)-1 == $('#'+id).attr(STRING_LEVEL)){//********************
+						var childrenDivArray = $('#'+id).children('div');
+						for(var i = 0;i<childrenDivArray.length;i++){
+							$(childrenDivArray).show(INT_HIDEORSHOWTIME);
+						}
+					}
+					expandFlag = true;
 					var node = getTreeCell(data);
 					$('#'+id).after(node);
 				}
+				$('#'+id).attr(STRING_EXPAND,expandFlag);//改变其展开状态
 				
 			}
 			
+			/**
+			 * 解析数据创建节点
+			 * @param {Object} data
+			 */
 			function getTreeCell(data){
-				var cell = '<div ';
+				var cell = '';
 				for (var i = 0;i < data.length;i++) {
+					cell += '<div '
 					var obj = data[i];
 					for(a in obj){
+						if(a == STRING_EXPAND&&obj[a] == true||obj[a] == STRING_TRUE){
+							
+						}
 						//if(!a.hasOwnProperty(obj)||typeof ( obj [a]) == " function " )continue;//是继承属性和Function跳过
-						tree += ''+a+'="'+obj[a]+'" ';
+						cell += ''+a+'="'+obj[a]+'" ';
 					}
-					tree += 'onclick:"javascript:treeNodeClick('+"'"+obj["id"]+"'"+');"'+'><img src="'+obj["icon"]+'"><div>'+obj['text']+'</div></div>';
+					cell += 'onclick=javascript:treeNodeClick('+"'"+obj["id"]+"'"+');'+'><img src="'+obj["icon"]+'"><div>'+obj['text']+'</div></div>';
 				}
 				return cell;
+			}
+			
+			/**
+			 *获取{id}的子节点
+			 * @param {String} id
+			 * @param {String } url 如果url为空时，默认为第一次加载树的url，即可自定义每个节点的加载的url
+			 */
+			function getNodeDataById(id,url){
+				if(!url){
+					url = TREE_NODE_URL;
+				}
+				$.ajax({
+					url : url,
+					type :"post",
+					data : {"id":id},
+					success : function(data){
+						return data;
+					},
+					error : function(data){
+						return null;
+					},
+					async : false
+				});
+			}
+			
+			//以下test
+
+			function ajaxRequest(url,data){
+				var xhr = getXhr();
+				xhr('post',url,true);
+				xhr.setRequestHeader('content-type','application/x-www-form-urlencoded');
+			}
+			
+			function getXhr(){
+				var xhr = null;
+				if(window.XMLHttpRequest){
+					xhr = new XMLHttpRequest();//非IE
+				}else{
+					xhr = new ActiveXObject('Microsoft.XMLHttp');
+				}
+				return xhr;
 			}
 		</script>
 	</body>
